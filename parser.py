@@ -2,56 +2,42 @@ import unittest
 
 
 def validate_markers(text, start_marker, end_marker):
-    editing = False
-    start_marker_len = len(start_marker)
-    end_marker_len = len(end_marker)
+    start_pos = 0
+    while True:
+        start_index = text.find(start_marker, start_pos)
+        end_index = text.find(end_marker, start_pos)
 
-    i = 0
-    while i < len(text):
-        if text[i:i+start_marker_len] == start_marker:
-            if editing:
-                raise ValueError("Nested start marker found.")
-            editing = True
-            i += start_marker_len
-        elif text[i:i+end_marker_len] == end_marker:
-            if not editing:
-                raise ValueError("End marker found without a matching start marker.")
-            editing = False
-            i += end_marker_len
-        else:
-            i += 1
+        if start_index == -1 and end_index == -1:
+            break
+        if (start_index == -1 and end_index != -1) or (end_index == -1 and start_index != -1):
+            raise ValueError("Unmatched start or end marker found.")
+        if end_index < start_index:
+            raise ValueError("End marker found without a matching start marker.")
+        if text.find(start_marker, start_index + len(start_marker), end_index) != -1:
+            raise ValueError("Nested start marker found.")
 
-    if editing:
-        raise ValueError("Start marker found without a matching end marker.")
+        start_pos = end_index + len(end_marker)
 
 
 def parse_sections(text, start_marker, end_marker):
     validate_markers(text, start_marker, end_marker)
 
     sections = []
-    in_section = False
-    current_section = []
-    start_marker_len = len(start_marker)
-    end_marker_len = len(end_marker)
+    start_pos = 0
+    while True:
+        start_index = text.find(start_marker, start_pos)
+        end_index = text.find(end_marker, start_pos)
 
-    i = 0
-    while i < len(text):
-        if text[i:i+start_marker_len] == start_marker:
-            current_section.append(text[i:i+start_marker_len])
-            in_section = True
-            i += start_marker_len
-        elif text[i:i+end_marker_len] == end_marker and in_section:
-            current_section.append(text[i:i+end_marker_len])
-            in_section = False
-            section_str = ''.join(current_section)
-            section_str = section_str[len(start_marker):-len(end_marker)]
-            sections.append(section_str)
-            current_section = []
-            i += end_marker_len
-        else:
-            if in_section:
-                current_section.append(text[i])
-            i += 1
+        if start_index == -1 and end_index == -1:
+            break  # No more markers found
+
+        # Extract section
+        section_start = start_index + len(start_marker)
+        section_end = end_index
+        section = text[section_start:section_end]
+        sections.append(section)
+
+        start_pos = end_index + len(end_marker)
 
     return sections
 
